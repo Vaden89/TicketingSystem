@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthService } from "./services/auth.service";
 import { useAuth } from "./providers/auth.context";
+import { Loading } from "./components/Loading";
 
 export default function Home() {
   const router = useRouter();
   const [displaySignUp, setdisplaySignUp] = useState(false);
-  const [errormessage, setErrorMessage] = useState("");
+  const [errors, setErrors] = useState({});
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +23,11 @@ export default function Home() {
     e.preventDefault();
     try {
       setLoading(true);
+      setErrorMessage("");
+      if (email.trim() === " " || password.trim() === "") {
+        setErrorMessage("There's an Empty Input field!");
+        throw "Empty Input field";
+      }
       const res = await AuthService.login(email, password);
       router.replace("/dashboard");
     } catch (error) {
@@ -32,24 +39,26 @@ export default function Home() {
 
   const register = async (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      const res = await AuthService.createUser(email, password, name);
-      console.log(res);
-    } catch (error) {
-      console.log(error);
-      throw new Error("There is an Error creating a new user", error);
-    } finally {
-      setLoading(false);
+    setErrorMessage("");
+    if (email.trim() === " " || password.trim() === "" || name.trim()) {
+      setErrorMessage("There's an Empty Input field!");
+      throw new Error("Empty Input field");
+    } else {
+      try {
+        setLoading(true);
+        const res = await AuthService.createUser(email, password, name);
+        console.log(res);
+      } catch (error) {
+        console.log(error);
+        throw new Error("There is an Error creating a new user", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   if (loading) {
-    return (
-      <div className="w-screen h-screen flex flex-col justify-center items-center text-2xl">
-        Loading...
-      </div>
-    );
+    return <Loading />;
   }
 
   if (displaySignUp) {
@@ -121,6 +130,7 @@ export default function Home() {
               Sign In
             </span>
           </span>
+          <span className="text-red-500">{errorMessage}</span>
         </div>
       </div>
     );
